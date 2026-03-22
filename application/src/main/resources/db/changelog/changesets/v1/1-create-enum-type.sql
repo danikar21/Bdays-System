@@ -1,0 +1,2 @@
+--CREATE TYPE role_type AS ENUM ('GUEST', 'USER', 'ADMIN');
+CREATE TYPE collection_status AS ENUM ('ACTIVE', 'CLOSED', 'CANCELLED');

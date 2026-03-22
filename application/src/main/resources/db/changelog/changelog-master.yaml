@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: changesets/v1/1-create-enum-type.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/v1/2-create-tables.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/v1/3-insert-accounts.yaml
+      relativeToChangelogFile: true
