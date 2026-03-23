@@ -34,4 +34,4 @@ email (userTest@example.com) - password (user)
 email (guestTest@example.com) - password (guest)  
 
 🐣 p.p.s Я еще учусь, поэтому буду рада любым советам, замечаниям или помощи! 
-This project is made with late nights, early mornings, patience, enthsusiasь, determination, curiosity, hope, and a little bit of magic✨
+This project is made with late nights, early mornings, patience, enthsusiasm, determination, curiosity, hope and a little bit of magic✨
