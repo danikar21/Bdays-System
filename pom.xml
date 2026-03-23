@@ -22,7 +22,6 @@
 
     <modules>
         <module>users</module>
-        <module>teams</module>
         <module>application</module>
         <module>security</module>
         <module>common</module>
@@ -50,11 +49,6 @@
             <dependency>
                 <groupId>ru.tbirthg</groupId>
                 <artifactId>users</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ru.tbirthg</groupId>
-                <artifactId>teams</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

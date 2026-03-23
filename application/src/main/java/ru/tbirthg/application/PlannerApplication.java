@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableJpaRepositories(basePackages = "ru.tbirthg.users.repository")
 @EntityScan(basePackages = {"ru.tbirthg.users.entity"})
 public class PlannerApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(PlannerApplication.class, args);
 	}

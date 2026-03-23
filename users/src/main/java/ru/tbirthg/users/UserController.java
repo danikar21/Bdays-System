@@ -1,8 +1,15 @@
 package ru.tbirthg.users;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,57 +26,133 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/users")
 @Tag(name = "Пользователи")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
-
     @GetMapping("/me")
     @Operation(summary = "Получить профиль текущего пользователя")
-    public UserDto getCurrentUser() {
-        return new UserDto(1L, "admin@example.com", "Admin", "Adminov", "Adminov", LocalDate.of(1990, 1, 1), "Developer", RoleType.GUEST);
-    }
-
-    @PutMapping("/me")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешный ответ",
+                    content = @Content(schema = @Schema(implementation = UserDto.class))),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден",
+                    content = @Content)
+    })
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Обновить профиль текущего пользователя (только для USER и ADMIN)")
-    public ResponseEntity<UserDto> updateCurrentUser(@Valid @RequestBody UserDto updateDto) {
+    public UserDto getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-        UserDto updated = userService.updateCurrentUser(email, updateDto);
-        return ResponseEntity.ok(updated);
+        return userService.getCurrentUser(email);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Получить пользователя по ID (только для USER и ADMIN)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешный ответ",
+                    content = @Content(schema = @Schema(implementation = UserDto.class))),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуется роль USER или ADMIN)",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден",
+                    content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public UserDto getUserById(@PathVariable Long id) {
-        return new UserDto(id, "user" + id + "@example.com", "Example", "Examplevich", "Examplov", LocalDate.of(2000, 1, 1), "Manager", RoleType.USER);
+        return userService.getUserById(id);
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "Получить список всех пользователей (без сортировки), только для USER и ADMIN")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешный ответ",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDto.class)))),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуется роль USER или ADMIN)",
+                    content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public List<UserDto> getAllUsersSimple() {
+        return userService.getAllUsers("id", "asc");
     }
 
     @GetMapping
-    @Operation(summary = "Получить список всех пользователей (постранично) (только для USER и ADMIN)")
+    @Operation(summary = "Получить список всех пользователей (с сортировкой), только для USER и ADMIN")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешный ответ",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDto.class)))),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуется роль USER или ADMIN)",
+                    content = @Content)
+    })
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<UserDto> getAllUsers(
+            @Parameter(description = "Поле для сортировки (id, firstName, lastName)", example = "id")
             @RequestParam(defaultValue = "id") String sortBy,
+            @Parameter(description = "Направление сортировки (asc/desc)", example = "asc")
             @RequestParam(defaultValue = "asc") String direction) {
         return userService.getAllUsers(sortBy, direction);
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Создать пользователя (только для ADMIN)")
-    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto createDto) {
-        UserDto created = userService.createUser(createDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Успешный ответ",
+                    content = @Content(schema = @Schema(implementation = UserDto.class))),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные",
+                    content = @Content),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Недостаточно прав (требуется роль ADMIN)",
+                    content = @Content),
+            @ApiResponse(responseCode = "409", description = "Email уже существует",
+                    content = @Content)
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto createUser(@Valid @RequestBody UserDto createDto) {
+        return userService.createUser(createDto);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Обновить пользователя (только для ADMIN)")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @Valid @RequestBody UserDto updateDto) {
-        UserDto updated = userService.updateUser(id, updateDto);
-        return ResponseEntity.ok(updated);
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешный ответ",
+                    content = @Content(schema = @Schema(implementation = UserDto.class))),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные",
+                    content = @Content),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Недостаточно прав (требуется роль ADMIN)",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден",
+                    content = @Content),
+            @ApiResponse(responseCode = "409", description = "Email уже используется",
+                    content = @Content)
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto updateUser(@PathVariable Long id, @Valid @RequestBody UserDto updateDto) {
+        return userService.updateUser(id, updateDto);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Удалить пользователя (только для ADMIN)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Успешно удалено"),
+            @ApiResponse(responseCode = "401", description = "Не авторизован",
+                    content = @Content),
+            @ApiResponse(responseCode = "403", description = "Недостаточно прав (требуется роль ADMIN)",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден",
+                    content = @Content)
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }

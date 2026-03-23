@@ -22,10 +22,6 @@
         </dependency>
         <dependency>
             <groupId>ru.tbirthg</groupId>
-            <artifactId>teams</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.tbirthg</groupId>
             <artifactId>birthdays</artifactId>
         </dependency>
         <dependency>

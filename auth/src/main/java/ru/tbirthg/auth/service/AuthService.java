@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,14 +31,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public TokenResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String email = authentication.getName();
-        String accessToken = jwtService.generateAccessToken(email);
-        String refreshToken = jwtService.generateRefreshToken(email);
-        return new TokenResponse(accessToken, refreshToken, "Bearer");
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(), request.getPassword())
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String email = authentication.getName();
+            String accessToken = jwtService.generateAccessToken(email);
+            String refreshToken = jwtService.generateRefreshToken(email);
+            return new TokenResponse(accessToken, refreshToken, "Bearer");
+        } catch (AuthenticationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
     }
 
     public TokenResponse register(RegisterRequest request) {
