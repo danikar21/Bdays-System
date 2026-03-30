@@ -5,6 +5,7 @@
 В состав окружения входят:
 - **app** - Spring Boot приложение 
 - **postgres** - PostgreSQL
+- **redis** - Redis
 
 **Проект полностью контейнезирован.** Для первого запуска выполните:
    ```bash
@@ -26,12 +27,13 @@
 
 🐱p.s.
 UPDATE:
-Swagger документация доступна по: http://localhost:8080/swagger-ui/index.html
+Swagger документация доступна по: http://localhost:8080/swagger-ui/index.html  
 
-Ручки auth/ настроены с БД, в БД первоначально есть 3 тестовых пользователя:  
-email (adminTest@example.com) - password (admin)  
-email (userTest@example.com) - password (user)  
-email (guestTest@example.com) - password (guest)  
+Ручки auth/ users/ teams/ birthdays/upcoming/ настроены с БД, в БД есть тестовые пользователи:  
+email: adminTest@example.com, password: adminTest1  
+email: userTest@example.com, password: userTest1  
+email: guestTest@example.com, password: guestTest1  
+У остальных пользователей на текущий момент password: password1   
 
 🐣 p.p.s Я еще учусь, поэтому буду рада любым советам, замечаниям или помощи! 
 This project is made with late nights, early mornings, patience, enthsusiasm, determination, curiosity, hope and a little bit of magic✨
