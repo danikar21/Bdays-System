@@ -8,11 +8,11 @@ import lombok.Data;
 @Data
 @Schema(description = "Запрос на вход")
 public class LoginRequest {
-    @Schema(description = "Email пользователя")
+    @Schema(description = "Email пользователя", example = "email@example.com")
     @NotBlank
     @Email
     private String email;
-    @Schema(description = "Пароль")
+    @Schema(description = "Пароль", example = "password123")
     @NotBlank
     private String password;
 }

@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -39,8 +41,9 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Неверные учетные данные (email или пароль)",
                     content = @Content)
     })
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        TokenResponse tokenResponse = authService.login(request, response);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     @PostMapping("/register")
@@ -48,13 +51,14 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Пользователь успешно создан",
                     content = @Content(schema = @Schema(implementation = TokenResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Некорректные данные (пароль < 6 символов)",
+            @ApiResponse(responseCode = "400", description = "Некорректные данные (пароль < 8 символов либо в пароле отсутствует хотя бы одна цифра)",
                     content = @Content),
             @ApiResponse(responseCode = "409", description = "Пользователь с таким email уже существует",
                     content = @Content)
     })
-    public ResponseEntity<TokenResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<TokenResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
+        TokenResponse tokenResponse = authService.register(request, response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse);
     }
 
     @PostMapping("/refresh")
@@ -68,7 +72,19 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Невалидный refresh токен",
                     content = @Content)
     })
-    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+    public ResponseEntity<TokenResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
+        TokenResponse tokenResponse = authService.refresh(request, response);
+        return ResponseEntity.ok(tokenResponse);
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Выход из системы")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Успешный выход"),
+            @ApiResponse(responseCode = "401", description = "Не авторизован, недействительный или отсутствующий токен", content = @Content)
+    })
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
+        return ResponseEntity.noContent().build();
     }
 }

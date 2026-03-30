@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: Dana Karopchuk
+      changes:
+        - sqlFile:
+            path: 4-insert-accounts.sql
+            relativeToChangelogFile: true
+      rollback:
+        - sqlFile:
+            path: rollback-4-insert-accounts.sql
+            relativeToChangelogFile: true

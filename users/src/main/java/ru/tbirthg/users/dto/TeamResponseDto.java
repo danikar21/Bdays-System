@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Информация о команде")
-public class TeamDto {
+public class TeamResponseDto {
     @Schema(description = "ID команды")
     private Long id;
     @Schema(description = "Название команды")

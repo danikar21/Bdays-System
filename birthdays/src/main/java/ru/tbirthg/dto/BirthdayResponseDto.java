@@ -11,13 +11,17 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Информация о дне рождения")
-public class BirthdayDto {
+public class BirthdayResponseDto {
+
     @Schema(description = "ID пользователя")
     private Long userId;
+
     @Schema(description = "Имя")
     private String firstName;
+
     @Schema(description = "Фамилия")
     private String lastName;
+
     @Schema(description = "День рождения")
     private LocalDate birthDate;
 }

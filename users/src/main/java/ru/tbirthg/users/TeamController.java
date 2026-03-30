@@ -13,8 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import ru.tbirthg.users.dto.TeamDto;
-import ru.tbirthg.users.dto.UserDto;
+import ru.tbirthg.users.dto.TeamRequestDto;
+import ru.tbirthg.users.dto.TeamResponseDto;
+import ru.tbirthg.users.dto.UserResponseDto;
 import ru.tbirthg.users.service.TeamService;
 
 import java.util.List;
@@ -31,14 +32,14 @@ public class TeamController {
     @Operation(summary = "Получить список всех команд (только для USER и ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный ответ",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = TeamDto.class)))),
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = TeamResponseDto.class)))),
             @ApiResponse(responseCode = "401", description = "Не авторизован (отсутствует или недействителен JWT)",
                     content = @Content),
             @ApiResponse(responseCode = "403", description = "Доступ запрещен (недостаточно прав)",
                     content = @Content)
     })
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public List<TeamDto> getAllTeams() {
+    public List<TeamResponseDto> getAllTeams() {
         return teamService.getAllTeams();
     }
 
@@ -46,7 +47,7 @@ public class TeamController {
     @Operation(summary = "Получить информацию о команде по ID (только для USER и ADMIN")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный ответ",
-                    content = @Content(schema = @Schema(implementation = TeamDto.class))),
+                    content = @Content(schema = @Schema(implementation = TeamResponseDto.class))),
             @ApiResponse(responseCode = "401", description = "Не авторизован",
                     content = @Content),
             @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуется роль USER или ADMIN)",
@@ -55,15 +56,15 @@ public class TeamController {
                     content = @Content)
     })
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public TeamDto getTeamById(@PathVariable Long id) {
+    public TeamResponseDto getTeamById(@PathVariable Long id) {
         return teamService.getTeamById(id);
     }
 
     @PostMapping
-    @Operation(summary = "Создать новую команду (только для ADMIN")
+    @Operation(summary = "Создать новую команду (только для ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Успешный ответ",
-                    content = @Content(schema = @Schema(implementation = TeamDto.class))),
+                    content = @Content(schema = @Schema(implementation = TeamResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Некорректные данные (например, пустое название)",
                     content = @Content),
             @ApiResponse(responseCode = "401", description = "Не авторизован",
@@ -75,15 +76,15 @@ public class TeamController {
     })
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public TeamDto createTeam(@Valid @RequestBody TeamDto team) {
-        return teamService.createTeam(team);
+    public TeamResponseDto createTeam(@Valid @RequestBody TeamRequestDto teamRequestDto) {
+        return teamService.createTeam(teamRequestDto);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Обновить команду (только для ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный ответ",
-                    content = @Content(schema = @Schema(implementation = TeamDto.class))),
+                    content = @Content(schema = @Schema(implementation = TeamResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Некорректные данные",
                     content = @Content),
             @ApiResponse(responseCode = "401", description = "Не авторизован",
@@ -96,8 +97,8 @@ public class TeamController {
                     content = @Content)
     })
     @PreAuthorize("hasRole('ADMIN')")
-    public TeamDto updateTeam(@PathVariable Long id, @Valid @RequestBody TeamDto teamDto) {
-        return teamService.updateTeam(id, teamDto);
+    public TeamResponseDto updateTeam(@PathVariable Long id, @Valid @RequestBody TeamRequestDto teamRequestDto) {
+        return teamService.updateTeam(id, teamRequestDto);
     }
 
     @DeleteMapping("/{id}")
@@ -123,7 +124,7 @@ public class TeamController {
     @Operation(summary = "Получить список сотрудников, входящих в команду")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Успешный ответ",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDto.class)))),
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserResponseDto.class)))),
             @ApiResponse(responseCode = "401", description = "Не авторизован",
                     content = @Content),
             @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуется роль USER или ADMIN)",
@@ -132,41 +133,24 @@ public class TeamController {
                     content = @Content)
     })
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public List<UserDto> getTeamMembers(@PathVariable Long id) {
+    public List<UserResponseDto> getTeamMembers(@PathVariable Long id) {
         return teamService.getTeamMembers(id);
     }
 
-    @DeleteMapping("/{teamId}/members")
-    @Operation(summary = "Удалить всех сотрудников из команды (только для ADMIN)")
+    @DeleteMapping("/{teamId}/members/{userId}")
+    @Operation(summary = "Удалить сотрудника из команды (только для ADMIN)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Успешный ответ"),
             @ApiResponse(responseCode = "401", description = "Не авторизован",
                     content = @Content),
             @ApiResponse(responseCode = "403", description = "Недостаточно прав (требуется роль ADMIN)",
                     content = @Content),
-            @ApiResponse(responseCode = "404", description = "Команда не найдена",
+            @ApiResponse(responseCode = "404", description = "Команда или сотрудник не найдены",
                     content = @Content)
     })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> removeAllMembersFromTeam(@PathVariable Long teamId) {
-        teamService.removeAllMembersFromTeam(teamId);
+    public ResponseEntity<Void> removeMemberFromTeam(@PathVariable Long teamId, @PathVariable Long userId) {
+        teamService.removeMemberFromTeam(teamId, userId);
         return ResponseEntity.noContent().build();
     }
-
-//    @DeleteMapping("/{teamId}/members/{userId}")
-//    @Operation(summary = "Удалить сотрудника из команды (только для ADMIN)")
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "204", description = "Успешный ответ"),
-//            @ApiResponse(responseCode = "401", description = "Не авторизован",
-//                    content = @Content),
-//            @ApiResponse(responseCode = "403", description = "Недостаточно прав (требуется роль ADMIN)",
-//                    content = @Content),
-//            @ApiResponse(responseCode = "404", description = "Команда или сотрудник не найдены",
-//                    content = @Content)
-//    })
-//    @PreAuthorize("hasRole('ADMIN')")
-//    public ResponseEntity<Void> removeMemberFromTeam(@PathVariable Long teamId, @PathVariable Long userId) {
-//        teamService.removeMemberFromTeam(teamId, userId);
-//        return ResponseEntity.noContent().build();
-//    }
 }

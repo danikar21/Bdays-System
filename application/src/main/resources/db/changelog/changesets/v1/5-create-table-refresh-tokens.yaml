@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5
+      author: Dana Karopchuk
+      changes:
+        - sqlFile:
+            path: 5-create-table-refresh-tokens.sql
+            relativeToChangelogFile: true
+      rollback:
+        - sqlFile:
+            path: rollback-5-create-table-refresh-tokens.sql
+            relativeToChangelogFile: true

@@ -1,0 +1,46 @@
+package ru.tbirthg.users.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import ru.tbirthg.common.enums.RoleType;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(description = "DTO пользователя")
+public class UserResponseDto {
+
+    @Schema(description = "Идентификатор пользователя")
+    private Long id;
+
+    @Schema(description = "Фамилия")
+    private String lastName;
+
+    @Schema(description = "Имя")
+    private String firstName;
+
+    @Schema(description = "Отчество")
+    private String patronymic;
+
+    @Schema(description = "День рождения")
+    private LocalDate birthDate;
+
+    @Schema(description = "Email пользователя (Уникальный)")
+    private String email;
+
+    @Schema(description = "ID команды")
+    private Long teamId;
+
+    @Schema(description = "Название команды")
+    private String teamName;
+
+    @Schema(description = "Должность")
+    private String position;
+
+    @Schema(description = "Роль")
+    private RoleType role;
+}

@@ -1,8 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id: 3
-      author: Dana Karopchuk
-      changes:
-        - sqlFile:
-            path: 3-insert-accounts.sql
-            relativeToChangelogFile: true

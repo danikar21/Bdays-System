@@ -6,5 +6,11 @@ databaseChangeLog:
       file: changesets/v1/2-create-tables.yaml
       relativeToChangelogFile: true
   - include:
-      file: changesets/v1/3-insert-accounts.yaml
+      file: changesets/v1/5-create-table-refresh-tokens.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/v1/3-insert-teams.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/v1/4-insert-accounts.yaml
       relativeToChangelogFile: true

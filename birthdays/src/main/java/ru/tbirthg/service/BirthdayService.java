@@ -2,22 +2,38 @@ package ru.tbirthg.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.tbirthg.dto.BirthdayDto;
+import ru.tbirthg.dto.BirthdayResponseDto;
+import ru.tbirthg.users.entity.UserEntity;
+import ru.tbirthg.users.repository.UserRepository;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BirthdayService {
+    private final UserRepository userRepository;
 
-    public List<BirthdayDto> getUpcomingBirthdays() {
-        return List.of(
-                new BirthdayDto(3L, "Ivan", "Ivanov", LocalDate.of(2006, 3, 30)),
-                new BirthdayDto(4L, "Petr", "Petrov", LocalDate.of(2001, 3, 28)),
-                new BirthdayDto(5L, "Svetlana", "Sidorova", LocalDate.of(2003, 3, 20)),
-                new BirthdayDto(6L, "Vasilisa", "Vasechkina", LocalDate.of(1999, 3, 15)),
-                new BirthdayDto(7L, "Anatoliy", "Sidorov", LocalDate.of(2008, 3, 7))
+    public List<BirthdayResponseDto> getUpcomingBirthdays() {
+        List<UserEntity> users = userRepository.findUsersWithBirthdayInCurrentAndNextMonth();
+        return users.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+//    public List<BirthdayResponseDto> getTodayBirthdays() {
+//        List<UserEntity> users = userRepository.findTodayBirthdays();
+//        return users.stream().
+//                map(this::mapToDto).
+//                collect(Collectors.toList());
+//    }
+
+    private BirthdayResponseDto mapToDto(UserEntity user) {
+        return new BirthdayResponseDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getBirthDate()
         );
     }
 }

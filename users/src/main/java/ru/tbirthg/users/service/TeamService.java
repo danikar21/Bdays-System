@@ -5,130 +5,116 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import ru.tbirthg.users.dto.TeamDto;
-import ru.tbirthg.users.dto.UserDto;
+import ru.tbirthg.users.dto.TeamRequestDto;
+import ru.tbirthg.users.dto.TeamResponseDto;
+import ru.tbirthg.users.dto.UserResponseDto;
+import ru.tbirthg.users.entity.TeamEntity;
+import ru.tbirthg.users.entity.UserEntity;
+import ru.tbirthg.users.repository.TeamRepository;
+import ru.tbirthg.users.repository.UserRepository;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TeamService {
 
-    private final UserService userService;
+    private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
 
-    private final Map<Long, TeamDto> teams = new ConcurrentHashMap<>();
-    private final AtomicLong nextId = new AtomicLong(3);
-
-    private final Map<Long, Set<Long>> teamMembers = new ConcurrentHashMap<>();
-
-    {
-        teams.put(1L, new TeamDto(1L, "Development"));
-        teams.put(2L, new TeamDto(2L, "Marketing"));
-        teamMembers.put(1L, ConcurrentHashMap.newKeySet());
-        teamMembers.put(2L, ConcurrentHashMap.newKeySet());
-    }
-
-    public List<TeamDto> getAllTeams() {
-        return new ArrayList<>(teams.values());
-    }
-
-    public TeamDto getTeamById(Long id) {
-        TeamDto team = teams.get(id);
-        if (team == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
-        }
-        return team;
-    }
-
-    @Transactional
-    public TeamDto createTeam(TeamDto teamDto) {
-        boolean nameExists = teams.values().stream()
-                .anyMatch(t -> t.getName().equalsIgnoreCase(teamDto.getName()));
-        if (nameExists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team with this name already exists");
-        }
-        Long id = nextId.getAndIncrement();
-        TeamDto newTeam = new TeamDto(id, teamDto.getName());
-        teams.put(id, newTeam);
-        teamMembers.put(id, ConcurrentHashMap.newKeySet());
-        return newTeam;
-    }
-
-    @Transactional
-    public TeamDto updateTeam(Long id, TeamDto teamDto) {
-        TeamDto existing = teams.get(id);
-        if (existing == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
-        }
-        if (!existing.getName().equalsIgnoreCase(teamDto.getName())) {
-            boolean nameExists = teams.values().stream()
-                    .filter(t -> !t.getId().equals(id))
-                    .anyMatch(t -> t.getName().equalsIgnoreCase(teamDto.getName()));
-            if (nameExists) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Team with this name already exists");
-            }
-            existing.setName(teamDto.getName());
-        }
-        return existing;
-    }
-
-    @Transactional
-    public void deleteTeam(Long id) {
-        if (!teams.containsKey(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
-        }
-        Set<Long> members = teamMembers.getOrDefault(id, Collections.emptySet());
-        if (!members.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team contains members");
-        }
-        teams.remove(id);
-        teamMembers.remove(id);
-    }
-
-    public List<UserDto> getTeamMembers(Long teamId) {
-        if (!teams.containsKey(teamId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
-        }
-        Set<Long> memberIds = teamMembers.getOrDefault(teamId, Collections.emptySet());
-        return memberIds.stream()
-                .map(userService::getUserById)
+    public List<TeamResponseDto> getAllTeams() {
+        return teamRepository.findAll().stream().map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
+    public TeamResponseDto getTeamById(Long id) {
+        TeamEntity team = teamRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+        return mapToDto(team);
+    }
 
     @Transactional
-    public void removeAllMembersFromTeam(Long teamId) {
-        if (!teams.containsKey(teamId)) {
+    public TeamResponseDto createTeam(TeamRequestDto teamRequestDto) {
+        if (teamRepository.findByNameIgnoreCase(teamRequestDto.getName()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team with this name already exists");
+        }
+        TeamEntity team = new TeamEntity();
+        team.setName(teamRequestDto.getName());
+        TeamEntity saved = teamRepository.save(team);
+        return mapToDto(saved);
+    }
+
+    @Transactional
+    public TeamResponseDto updateTeam(Long id, TeamRequestDto teamRequestDto) {
+        TeamEntity team = teamRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found"));
+
+        if (!team.getName().equalsIgnoreCase(teamRequestDto.getName())) {
+            if (teamRepository.findByNameIgnoreCase(teamRequestDto.getName()).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Team with this name already exists");
+            }
+            team.setName(teamRequestDto.getName());
+        }
+        TeamEntity updated = teamRepository.save(team);
+        return mapToDto(updated);
+    }
+
+
+    @Transactional
+    public void deleteTeam(Long id) {
+        if (!teamRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
         }
-        Set<Long> members = teamMembers.get(teamId);
-        if (members != null) {
-            members.clear();
+        if (userRepository.existsByTeamId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Team contains members");
         }
+        teamRepository.deleteById(id);
+    }
+
+    public List<UserResponseDto> getTeamMembers(Long teamId) {
+        if (!teamRepository.existsById(teamId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
+        }
+        List<UserEntity> members = userRepository.findByTeamId(teamId);
+        return members.stream()
+                .map(this::mapToUserResponseDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public void removeMemberFromTeam (Long teamId, Long userId){
-        if (!teams.containsKey(teamId)) {
+        if (!teamRepository.existsById(teamId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
         }
-        Set<Long> members = teamMembers.get(teamId);
-        if (members == null || !members.contains(userId)) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (user.getTeam() == null || !user.getTeam().getId().equals(teamId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not a member of this team");
         }
-        members.remove(userId);
+        user.setTeam(null);
+        userRepository.save(user);
     }
 
-//    @Transactional
-//    public void addMemberToTeam(Long teamId, Long userId) {
-//        if (!teams.containsKey(teamId)) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team not found");
-//        }
-//        userService.getUserById(userId);
-//        Set<Long> members = teamMembers.computeIfAbsent(teamId, k -> ConcurrentHashMap.newKeySet());
-//        members.add(userId);
-//    }
+    private TeamResponseDto mapToDto(TeamEntity entity) {
+        return new TeamResponseDto(entity.getId(), entity.getName());
+    }
+
+    private UserResponseDto mapToUserResponseDto(UserEntity entity) {
+        UserResponseDto dto = new UserResponseDto();
+        dto.setId(entity.getId());
+        dto.setEmail(entity.getEmail());
+        dto.setFirstName(entity.getFirstName());
+        dto.setPatronymic(entity.getPatronymic());
+        dto.setLastName(entity.getLastName());
+        dto.setBirthDate(entity.getBirthDate());
+        dto.setPosition(entity.getPosition());
+        dto.setRole(entity.getRole());
+        if (entity.getTeam() != null) {
+            dto.setTeamId(entity.getTeam().getId());
+            dto.setTeamName(entity.getTeam().getName());
+        }
+        return dto;
+    }
 }
